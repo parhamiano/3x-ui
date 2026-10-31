@@ -15,6 +15,7 @@ import type {
   ShadowsocksInboundSettings,
 } from '@/schemas/protocols/inbound/shadowsocks';
 import type { TrojanClient, TrojanInboundSettings } from '@/schemas/protocols/inbound/trojan';
+import type { AnyTLSInboundSettings } from '@/schemas/protocols/inbound/anytls';
 import type { TuicClient, TuicInboundSettings } from '@/schemas/protocols/inbound/tuic';
 import type { TunInboundSettings } from '@/schemas/protocols/inbound/tun';
 import type { TunnelInboundSettings } from '@/schemas/protocols/inbound/tunnel';
@@ -178,6 +179,10 @@ export function createDefaultVmessInboundSettings(): VmessInboundSettings {
 
 export function createDefaultTrojanInboundSettings(): TrojanInboundSettings {
   return { clients: [], fallbacks: [] };
+}
+
+export function createDefaultAnyTLSInboundSettings(): AnyTLSInboundSettings {
+  return { certificate: '', private_key: '', sni: '', clients: [] };
 }
 
 export interface ShadowsocksInboundSeed {
@@ -385,7 +390,8 @@ export type AnyInboundSettings =
   | MtprotoInboundSettings
   | AmneziawgInboundSettings
   | TuicInboundSettings
-  | MasqueInboundSettings;
+  | MasqueInboundSettings
+  | AnyTLSInboundSettings;
 
 export function createDefaultInboundSettings(protocol: string): AnyInboundSettings | null {
   switch (protocol) {
@@ -417,6 +423,8 @@ export function createDefaultInboundSettings(protocol: string): AnyInboundSettin
       return createDefaultTuicInboundSettings();
     case 'masque':
       return createDefaultMasqueInboundSettings();
+    case 'anytls':
+      return createDefaultAnyTLSInboundSettings();
     default:
       return null;
   }

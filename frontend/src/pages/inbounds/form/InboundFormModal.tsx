@@ -56,6 +56,7 @@ import { AdvancedAllEditor, AdvancedSliceEditor } from './advanced-editors';
 import { formatInboundIssue, formatInboundValidation } from './formatValidationError';
 import {
   AmneziawgFields,
+  AnyTLSFields,
   HttpFields,
   HysteriaFields,
   MasqueSettingsFields,
@@ -808,6 +809,8 @@ export default function InboundFormModal({
       )}
 
       {protocol === Protocols.TUIC && <TuicFields />}
+
+      {protocol === Protocols.ANYTLS && <AnyTLSFields />}
 
       {protocol === Protocols.MASQUE && <MasqueSettingsFields />}
 

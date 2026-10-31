@@ -29,7 +29,7 @@ func inboundTransports(protocol model.Protocol, streamSettings, settings string)
 	switch protocol {
 	case model.Hysteria, model.WireGuard, model.AmneziaWG, model.TUIC:
 		return transportUDP
-	case model.MTProto:
+	case model.MTProto, model.AnyTLS:
 		return transportTCP
 	case model.MASQUE:
 		return masqueTransports(streamSettings)
@@ -323,6 +323,13 @@ func checkPortConflictTx(db *gorm.DB, inbound *model.Inbound, ignoreId int) (*po
 		if conflict != nil {
 			return conflict, nil
 		}
+		conflict, err = checkSingboxSocksConflict(db, inbound, ignoreId, newBits)
+		if err != nil {
+			return nil, err
+		}
+		if conflict != nil {
+			return conflict, nil
+		}
 	}
 
 	// The reverse direction, only meaningful once the id is known -- AddInbound
@@ -374,6 +381,13 @@ func checkPortConflictTx(db *gorm.DB, inbound *model.Inbound, ignoreId int) (*po
 		}
 		if conflict != nil {
 			return conflict, nil
+		}
+	}
+
+	if inbound.NodeID == nil && inbound.Protocol == model.AnyTLS && ignoreId > 0 {
+		conflict, err := singboxRelayConflict(db, inbound, ignoreId)
+		if err != nil || conflict != nil {
+			return conflict, err
 		}
 	}
 

@@ -1688,3 +1688,37 @@ func TestBuildAmneziaWGProxyForClashProjectsKeepAliveRangeToLowerBound(t *testin
 		t.Fatalf("Clash export emitted invalid legacy keepalive: %v", proxy["persistent-keepalive"])
 	}
 }
+
+// mihomo dials AnyTLS with the client's own password over TLS; no transport or
+// security block applies, so a stream-built proxy would carry the wrong shape.
+func TestGetProxies_AnyTLS(t *testing.T) {
+	svc := &SubClashService{SubService: &SubService{}}
+	inbound := &model.Inbound{
+		Protocol: model.AnyTLS,
+		Listen:   "198.51.100.9",
+		Port:     443,
+		Remark:   "r",
+		Settings: `{"certificate":"/c","private_key":"/k","sni":"cdn.example.com","clients":[{"email":"a@example.com","password":"pa"}]}`,
+	}
+	client := model.Client{Email: "a@example.com", Password: "pa"}
+
+	proxies := svc.getProxies(svc.SubService, inbound, client, "panel.example.com")
+	if len(proxies) != 1 {
+		t.Fatalf("getProxies returned %d proxies, want 1", len(proxies))
+	}
+	p := proxies[0]
+	want := map[string]any{
+		"type": "anytls", "server": "198.51.100.9", "port": 443, "password": "pa",
+		"sni": "cdn.example.com", "udp": true, "client-fingerprint": "chrome",
+	}
+	for k, v := range want {
+		if p[k] != v {
+			t.Errorf("%s = %#v, want %#v", k, p[k], v)
+		}
+	}
+	for _, absent := range []string{"network", "tls", "uuid"} {
+		if _, ok := p[absent]; ok {
+			t.Errorf("proxy carries %q, which anytls does not take: %v", absent, p)
+		}
+	}
+}

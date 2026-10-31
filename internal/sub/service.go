@@ -756,7 +756,7 @@ func (s *SubService) loadInboundsBySubId(subId string) ([]*model.Inbound, error)
 		JOIN client_inbounds ON client_inbounds.inbound_id = inbounds.id
 		JOIN clients ON clients.id = client_inbounds.client_id
 		WHERE
-			inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','amneziawg','mtproto','tuic','masque')
+			inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','amneziawg','mtproto','tuic','masque','anytls')
 			AND clients.sub_id = ? AND inbounds.enable = ?
 	)`, subId, true).Order("sub_sort_index ASC").Order("id ASC")
 	if cached {
@@ -939,8 +939,28 @@ func (s *SubService) GetLink(inbound *model.Inbound, email string) string {
 		return s.genAmneziaWGLink(inbound, email)
 	case "tuic":
 		return s.genTuicLink(inbound, email)
+	case "anytls":
+		return s.genAnyTLSLink(inbound, email)
 	}
 	return ""
+}
+
+func (s *SubService) genAnyTLSLink(inbound *model.Inbound, email string) string {
+	client, ok := s.clientForLink(inbound, email)
+	if !ok || client.Password == "" {
+		return ""
+	}
+	params := make(map[string]string)
+	if sni, _ := s.linkSettings(inbound)["sni"].(string); sni != "" {
+		params["sni"] = sni
+	}
+	endpoints := s.advertisedEndpoints(inbound)
+	links := make([]string, 0, len(endpoints))
+	for _, e := range endpoints {
+		link := fmt.Sprintf("anytls://%s@%s", encodeUserinfo(client.Password), joinHostPort(e.Address, e.Port))
+		links = append(links, buildLinkWithParams(link, params, s.endpointRemark(inbound, email, e.ep, "")))
+	}
+	return strings.Join(links, "\n")
 }
 
 func (s *SubService) genTuicLink(inbound *model.Inbound, email string) string {

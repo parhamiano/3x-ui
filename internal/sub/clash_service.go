@@ -460,6 +460,9 @@ func (s *SubClashService) buildProxy(subReq *SubService, inbound *model.Inbound,
 	if inbound.Protocol == model.AmneziaWG {
 		return s.buildAmneziaWGProxy(subReq, inbound, client, ep)
 	}
+	if inbound.Protocol == model.AnyTLS {
+		return s.buildAnyTLSProxy(subReq, inbound, client, ep)
+	}
 
 	network, _ := stream["network"].(string)
 
@@ -717,6 +720,28 @@ func (s *SubClashService) buildWireguardProxy(subReq *SubService, inbound *model
 		}
 	}
 
+	return proxy
+}
+
+func (s *SubClashService) buildAnyTLSProxy(subReq *SubService, inbound *model.Inbound, client model.Client, ep map[string]any) map[string]any {
+	if client.Password == "" {
+		return nil
+	}
+	proxy := map[string]any{
+		"name":               subReq.endpointRemark(inbound, client.Email, ep, "anytls"),
+		"type":               "anytls",
+		"server":             inbound.Listen,
+		"port":               inbound.Port,
+		"password":           client.Password,
+		"udp":                true,
+		"client-fingerprint": "chrome",
+	}
+	if sni, _ := subReq.linkSettings(inbound)["sni"].(string); sni != "" {
+		proxy["sni"] = sni
+	}
+	if sni, ok := externalProxySNI(ep); ok {
+		proxy["sni"] = sni
+	}
 	return proxy
 }
 

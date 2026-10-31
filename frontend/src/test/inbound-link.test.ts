@@ -6,6 +6,7 @@ import {
   genAmneziaWGConfig,
   genAmneziaWGLink,
   genAllLinks,
+  genAnyTLSLink,
   genHysteriaLink,
   genInboundLinks,
   genShadowsocksLink,
@@ -1268,6 +1269,34 @@ describe('genVlessLink XHTTP extra compatibility', () => {
     expect(extra.sessionIDKey).toBe('X-Session');
     expect(extra.sessionPlacement).toBe('header');
     expect(extra.sessionKey).toBe('X-Session');
+  });
+});
+
+describe('genAnyTLSLink', () => {
+  const inbound = InboundSchema.parse({
+    id: 11,
+    protocol: 'anytls',
+    port: 443,
+    settings: {
+      certificate: '/c',
+      private_key: '/k',
+      sni: 'cdn.example.com',
+      clients: [{ email: 'user@anytls', password: 'p@ss/word' }],
+    },
+  });
+
+  it('matches the Go subscription link for the same client', () => {
+    const link = genAnyTLSLink({
+      inbound,
+      address: '198.51.100.9',
+      remark: 'r',
+      clientPassword: 'p@ss/word',
+    });
+    expect(link).toBe('anytls://p%40ss%2Fword@198.51.100.9:443?sni=cdn.example.com#r');
+  });
+
+  it('emits nothing for a client without a password', () => {
+    expect(genAnyTLSLink({ inbound, address: '198.51.100.9', clientPassword: '' })).toBe('');
   });
 });
 

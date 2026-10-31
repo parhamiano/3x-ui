@@ -169,6 +169,12 @@ jobs:
               tar -xzf "${MTG_PKG}.tar.gz"
               mv "${MTG_PKG}/mtg-multi" "mtg-linux-${{ matrix.platform }}"
               rm -rf "${MTG_PKG}" "${MTG_PKG}.tar.gz"
+              # sing-box (AnyTLS sidecar) is pinned: the panel renders its config schema.
+              SINGBOX_PKG="sing-box-1.14.4-linux-${{ matrix.platform }}"
+              curl -sfLRO $CURL_RETRY "https://github.com/SagerNet/sing-box/releases/download/v1.14.4/${SINGBOX_PKG}.tar.gz"
+              tar -xzf "${SINGBOX_PKG}.tar.gz"
+              mv "${SINGBOX_PKG}/sing-box" "sing-box-linux-${{ matrix.platform }}"
+              rm -rf "${SINGBOX_PKG}" "${SINGBOX_PKG}.tar.gz"
               ;;
           esac
           cd ../..
@@ -307,6 +313,12 @@ jobs:
           Expand-Archive -Path "$MTG_PKG.zip" -DestinationPath "mtg-tmp" -Force
           Move-Item "mtg-tmp/$MTG_PKG/mtg-multi.exe" "mtg-windows-amd64.exe"
           Remove-Item -Recurse -Force "mtg-tmp", "$MTG_PKG.zip"
+
+          $SINGBOX_PKG = "sing-box-1.14.4-windows-amd64"
+          curl.exe -sfLRO --retry 5 --retry-all-errors --retry-delay 3 "https://github.com/SagerNet/sing-box/releases/download/v1.14.4/$SINGBOX_PKG.zip"
+          Expand-Archive -Path "$SINGBOX_PKG.zip" -DestinationPath "singbox-tmp" -Force
+          Move-Item "singbox-tmp/$SINGBOX_PKG/sing-box.exe" "sing-box-windows-amd64.exe"
+          Remove-Item -Recurse -Force "singbox-tmp", "$SINGBOX_PKG.zip"
 
           cd ..
           Copy-Item -Path ..\windows_files\* -Destination . -Recurse

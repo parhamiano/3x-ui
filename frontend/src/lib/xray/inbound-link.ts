@@ -999,6 +999,28 @@ export function genTuicLink(input: GenTuicLinkInput): string {
   return url.toString();
 }
 
+export interface GenAnyTLSLinkInput {
+  inbound: Inbound;
+  address: string;
+  port?: number;
+  remark?: string;
+  clientPassword?: string;
+}
+
+// anytls://<password>@<host>:<port>?sni=<sni>#<remark>, the form sing-box,
+// mihomo and NekoBox import; mirrors the Go genAnyTLSLink.
+export function genAnyTLSLink(input: GenAnyTLSLinkInput): string {
+  const { inbound, address, port = inbound.port, remark = '', clientPassword = '' } = input;
+  if (inbound.protocol !== 'anytls' || !clientPassword) return '';
+  const url = new URL(
+    `anytls://${encodeURIComponent(clientPassword)}@${formatUrlHost(address)}:${port}`,
+  );
+  const sni = inbound.settings.sni;
+  if (sni) url.searchParams.set('sni', sni);
+  if (remark) url.hash = encodeURIComponent(remark);
+  return url.toString();
+}
+
 export interface GenWireguardLinkInput {
   settings: WireguardInboundSettings;
   address: string;
@@ -1454,6 +1476,8 @@ export function getInboundClients(inbound: Inbound): ClientShape[] | null {
       return (inbound.settings.clients ?? []) as ClientShape[];
     case 'tuic':
       return (inbound.settings.clients ?? []) as ClientShape[];
+    case 'anytls':
+      return (inbound.settings.clients ?? []) as ClientShape[];
     case 'shadowsocks':
       return (inbound.settings.clients ?? []) as ClientShape[];
     default:
@@ -1557,6 +1581,8 @@ export function genLink(input: GenLinkInput): string {
         clientPassword: client.password ?? '',
         externalProxy,
       });
+    case 'anytls':
+      return genAnyTLSLink({ inbound, address, port, remark, clientPassword: client.password ?? '' });
     default:
       return '';
   }

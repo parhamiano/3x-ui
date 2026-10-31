@@ -28,6 +28,7 @@ const PROTOCOL_LABELS: Record<string, string> = {
   tg: 'MTProto',
   vpn: 'AmneziaWG',
   tuic: 'TUIC',
+  anytls: 'AnyTLS',
 };
 
 const PROTOCOL_COLORS: Record<string, string> = {
@@ -41,6 +42,7 @@ const PROTOCOL_COLORS: Record<string, string> = {
   MTProto: 'blue',
   AmneziaWG: 'yellow',
   TUIC: 'orange',
+  AnyTLS: 'green',
 };
 
 const SECURITY_COLORS: Record<string, string> = {

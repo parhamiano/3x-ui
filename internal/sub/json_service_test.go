@@ -585,3 +585,16 @@ func TestSubJsonServiceSkipsTUIC(t *testing.T) {
 		t.Fatalf("getConfig emitted %d unsupported TUIC Xray config(s)", len(got))
 	}
 }
+
+// An Xray JSON client has no anytls outbound, so emitting one would hand the
+// subscriber a config Xray refuses to load.
+func TestSubJsonServiceSkipsAnyTLS(t *testing.T) {
+	if got := NewSubJsonService("", "", "", "", nil).getConfig(
+		&SubService{address: "sub.example.com"},
+		&model.Inbound{Listen: "203.0.113.8", Port: 443, Protocol: model.AnyTLS},
+		model.Client{Email: "a", Password: "p"},
+		"sub.example.com",
+	); len(got) != 0 {
+		t.Fatalf("getConfig emitted %d unsupported AnyTLS Xray config(s)", len(got))
+	}
+}

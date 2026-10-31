@@ -595,6 +595,7 @@ update_x-ui() {
         # an inbound port with an outdated secret, silently breaking new clients.
         # The new panel respawns a clean mtg per inbound on next start.
         pkill -f 'mtg-linux-[^ ]* run ' > /dev/null 2>&1 || true
+        pkill -f 'sing-box-linux-[^ ]* run -c ' > /dev/null 2>&1 || true
         pkill -f 'tuic-server.*-c .*bin/tuic/tuic_[0-9]+\.json' > /dev/null 2>&1 || true
         echo -e "${green}Removing old x-ui version...${plain}"
         rm ${xui_folder} -f > /dev/null 2>&1
@@ -606,6 +607,7 @@ update_x-ui() {
         rm ${xui_folder}/x-ui.sh -f > /dev/null 2>&1
         echo -e "${green}Removing old mtg version...${plain}"
         rm ${xui_folder}/bin/mtg-linux-$(arch) -f > /dev/null 2>&1
+        rm ${xui_folder}/bin/sing-box-linux-$(arch) -f > /dev/null 2>&1
         echo -e "${green}Removing old xray version...${plain}"
         rm ${xui_folder}/bin/xray-linux-$(arch) -f > /dev/null 2>&1
         echo -e "${green}Removing old README and LICENSE file...${plain}"
@@ -641,7 +643,11 @@ update_x-ui() {
             mv bin/mtg-linux-$(arch) bin/mtg-linux-arm > /dev/null 2>&1
             chmod +x bin/mtg-linux-arm > /dev/null 2>&1
         fi
+        if [[ -f bin/sing-box-linux-$(arch) ]]; then
+            mv bin/sing-box-linux-$(arch) bin/sing-box-linux-arm > /dev/null 2>&1
+        fi
     fi
+    chmod +x bin/sing-box-linux-* > /dev/null 2>&1
 
     chmod +x x-ui bin/xray-linux-$(arch) > /dev/null 2>&1
     if [[ -f bin/mtg-linux-arm ]]; then

@@ -1798,6 +1798,7 @@ install_x-ui() {
         # an inbound port with an outdated secret, silently breaking new clients.
         # The freshly installed panel respawns a clean mtg per inbound on start.
         pkill -f 'mtg-linux-[^ ]* run ' > /dev/null 2>&1 || true
+        pkill -f 'sing-box-linux-[^ ]* run -c ' > /dev/null 2>&1 || true
         pkill -f 'tuic-server.*-c .*bin/tuic/tuic_[0-9]+\.json' > /dev/null 2>&1 || true
 
         # bin/ is about to be wiped wholesale by the tar extraction below. The
@@ -1856,8 +1857,12 @@ install_x-ui() {
             mv bin/mtg-linux-$(arch) bin/mtg-linux-arm
             chmod +x bin/mtg-linux-arm
         fi
+        if [[ -f bin/sing-box-linux-$(arch) ]]; then
+            mv bin/sing-box-linux-$(arch) bin/sing-box-linux-arm
+        fi
     fi
     chmod +x x-ui bin/xray-linux-$(arch)
+    chmod +x bin/sing-box-linux-* > /dev/null 2>&1
     if [[ -f bin/mtg-linux-arm ]]; then
         chmod +x bin/mtg-linux-arm
     elif [[ -f bin/mtg-linux-$(arch) ]]; then

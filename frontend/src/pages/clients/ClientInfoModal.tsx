@@ -47,6 +47,7 @@ const INBOUND_PROTOCOL_COLORS: Record<string, string> = {
   mixed: 'lime',
   tunnel: 'orange',
   tuic: 'orange',
+  anytls: 'green',
 };
 
 const INBOUND_CHIP_LIMIT = 1;

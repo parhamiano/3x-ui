@@ -280,6 +280,7 @@ function clientSchemaForProtocol(protocol: string): z.ZodType | null {
     case 'vmess':
       return VmessClientSchema;
     case 'trojan':
+    case 'anytls':
       return TrojanClientSchema;
     case 'shadowsocks':
       return ShadowsocksClientSchema;

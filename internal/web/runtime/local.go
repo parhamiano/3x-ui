@@ -17,6 +17,7 @@ import (
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 	"github.com/mhsanaei/3x-ui/v3/internal/logger"
 	"github.com/mhsanaei/3x-ui/v3/internal/mtproto"
+	"github.com/mhsanaei/3x-ui/v3/internal/singbox"
 	"github.com/mhsanaei/3x-ui/v3/internal/tuic"
 	"github.com/mhsanaei/3x-ui/v3/internal/xray"
 )
@@ -99,6 +100,14 @@ func (l *Local) AddInbound(_ context.Context, ib *model.Inbound) error {
 		}
 		return err
 	}
+	if ib.Protocol == model.AnyTLS {
+		l.requestReconcile()
+		inst, ok := singbox.InstanceFromInbound(ib)
+		if !ok {
+			return nil
+		}
+		return singbox.GetManager().Ensure(inst)
+	}
 	body, err := json.MarshalIndent(ib.GenXrayInboundConfig(), "", "  ")
 	if err != nil {
 		return err
@@ -130,6 +139,11 @@ func (l *Local) DelInbound(_ context.Context, ib *model.Inbound) error {
 		}
 		return nil
 	}
+	if ib.Protocol == model.AnyTLS {
+		singbox.GetManager().Remove(ib.Id)
+		l.requestReconcile()
+		return nil
+	}
 	return l.withAPI(func(api *xray.XrayAPI) error {
 		return api.DelInbound(ib.Tag)
 	})
@@ -144,6 +158,9 @@ func (l *Local) UpdateInbound(ctx context.Context, oldIb, newIb *model.Inbound) 
 	}
 	if oldIb.Protocol == model.TUIC || newIb.Protocol == model.TUIC {
 		return l.updateTuicInbound(ctx, oldIb, newIb)
+	}
+	if oldIb.Protocol == model.AnyTLS || newIb.Protocol == model.AnyTLS {
+		return l.updateSingboxInbound(ctx, oldIb, newIb)
 	}
 	_ = l.DelInbound(ctx, oldIb)
 	if !newIb.Enable {
@@ -273,8 +290,36 @@ func (l *Local) updateTuicInbound(ctx context.Context, oldIb, newIb *model.Inbou
 	return tuic.GetManager().Ensure(inst)
 }
 
+// updateSingboxInbound keeps the sidecar when its rendered config is unchanged,
+// which a Del+Add would not; the Xray relay accounts are refreshed either way.
+func (l *Local) updateSingboxInbound(ctx context.Context, oldIb, newIb *model.Inbound) error {
+	l.requestReconcile()
+	if oldIb.Protocol == model.AnyTLS && newIb.Protocol != model.AnyTLS {
+		singbox.GetManager().Remove(oldIb.Id)
+		if !newIb.Enable {
+			return nil
+		}
+		return l.AddInbound(ctx, newIb)
+	}
+	if oldIb.Protocol != model.AnyTLS {
+		_ = l.DelInbound(ctx, oldIb)
+	}
+	inst, ok := singbox.InstanceFromInbound(newIb)
+	if !newIb.Enable || !ok {
+		singbox.GetManager().Remove(newIb.Id)
+		return nil
+	}
+	return singbox.GetManager().Ensure(inst)
+}
+
+func (l *Local) requestReconcile() {
+	if l.deps.RequestReconcile != nil {
+		l.deps.RequestReconcile()
+	}
+}
+
 func (l *Local) AddUser(_ context.Context, ib *model.Inbound, userMap map[string]any) error {
-	if ib.Protocol == model.TUIC {
+	if ib.Protocol == model.TUIC || ib.Protocol == model.AnyTLS {
 		if l.deps.RequestReconcile != nil {
 			l.deps.RequestReconcile()
 		}
@@ -289,7 +334,7 @@ func (l *Local) AddUser(_ context.Context, ib *model.Inbound, userMap map[string
 }
 
 func (l *Local) RemoveUser(_ context.Context, ib *model.Inbound, email string) error {
-	if ib.Protocol == model.TUIC {
+	if ib.Protocol == model.TUIC || ib.Protocol == model.AnyTLS {
 		if l.deps.RequestReconcile != nil {
 			l.deps.RequestReconcile()
 		}

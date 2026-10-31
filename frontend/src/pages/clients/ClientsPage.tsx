@@ -214,6 +214,7 @@ const INBOUND_PROTOCOL_COLORS: Record<string, string> = {
   mixed: 'lime',
   tunnel: 'orange',
   tuic: 'orange',
+  anytls: 'green',
 };
 const INBOUND_CHIP_LIMIT = 1;
 // A shared empty array keeps the memoised chip cell from seeing a fresh prop for

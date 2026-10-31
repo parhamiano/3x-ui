@@ -1397,7 +1397,7 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 	// Secure client ID
 	for _, client := range clients {
 		switch inbound.Protocol {
-		case "trojan", "masque":
+		case "trojan", "masque", "anytls":
 			if client.Password == "" {
 				return inbound, false, common.NewError("empty client ID")
 			}
@@ -1483,6 +1483,15 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 				return aErr
 			}
 		}
+		if inbound.NodeID == nil && inbound.Protocol == model.AnyTLS {
+			conflict, cErr := singboxRelayConflict(tx, inbound, inbound.Id)
+			if cErr != nil {
+				return cErr
+			}
+			if conflict != nil {
+				return common.NewError(conflict.String())
+			}
+		}
 		if inbound.NodeID == nil && inbound.Protocol == model.TUIC {
 			if self := tuicSocksSelfConflict(inbound, inbound.Id); self != "" {
 				return common.NewError(self)
@@ -1556,7 +1565,7 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 				if push {
 					payload := inbound
 					pushable := true
-					if inbound.Protocol == model.MTProto || inbound.Protocol == model.TUIC {
+					if inbound.Protocol == model.MTProto || inbound.Protocol == model.TUIC || inbound.Protocol == model.AnyTLS {
 						if built, bErr := s.buildInboundForLocalRuntime(tx, inbound); bErr == nil {
 							payload = built
 						} else {
@@ -1570,7 +1579,7 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 								logger.Debug("New inbound added on", rt.Name(), ":", inbound.Tag)
 							} else {
 								logger.Debug("Unable to add inbound on", rt.Name(), ":", err1)
-								if inbound.Protocol != model.MTProto && inbound.Protocol != model.TUIC {
+								if inbound.Protocol != model.MTProto && inbound.Protocol != model.TUIC && inbound.Protocol != model.AnyTLS {
 									needRestart = true
 								}
 							}
@@ -2326,7 +2335,7 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 // servedOutsideXray: these protocols run under their own manager, whose update
 // reconfigures in place where a Del+Add would drop every live session.
 func servedOutsideXray(protocol model.Protocol) bool {
-	return protocol == model.MTProto || protocol == model.TUIC || protocol == model.AmneziaWG
+	return protocol == model.MTProto || protocol == model.TUIC || protocol == model.AmneziaWG || protocol == model.AnyTLS
 }
 
 // applyInboundUserOps reports whether per-user core ops moved running to next, so

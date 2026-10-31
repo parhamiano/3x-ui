@@ -211,7 +211,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		if inbound.NodeID != nil {
 			continue
 		}
-		if inbound.Protocol == model.MTProto || inbound.Protocol == model.AmneziaWG || inbound.Protocol == model.TUIC {
+		if inbound.Protocol == model.MTProto || inbound.Protocol == model.AmneziaWG || inbound.Protocol == model.TUIC || inbound.Protocol == model.AnyTLS {
 			continue
 		}
 		settings := map[string]any{}
@@ -450,6 +450,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 	// whatever rules the admin adds through the stock Routing page, exactly
 	// like routing any other protocol.
 	injectAmneziawgnetSocks(xrayConfig, inbounds)
+	injectSingboxRelay(xrayConfig, inbounds)
 	tuicInstances := configuredTuicInstances(inbounds)
 	if err := injectTuicRelay(xrayConfig, tuicInstances); err != nil {
 		return nil, err
